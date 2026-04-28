@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Fortune Cookie AR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Use A-Frame 1.3.0 for better AR.js compatibility -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <!-- AR.js NFT version -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .hint {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 10;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.85);
+            font-family: sans-serif;
+            text-align: center;
+        }
+
+        /* Loading indicator for NFT */
+        .arjs-loader {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .arjs-loader div {
+            text-align: center;
+            font-size: 1.25em;
+            color: white;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loader shown until NFT markers are loaded -->
+    <div class="arjs-loader">
+        <div>Loading Fortune Cookie AR...<br>(This may take a few seconds)</div>
+    </div>
+
+    <div class="hint">Point your camera at the fortune cookie drawing 🥠</div>
+
+    <a-scene embedded vr-mode-ui="enabled: false" renderer="logarithmicDepthBuffer: true; precision: medium;"
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720;">
+        
+        <a-assets>
+            <video id="cookieVideo" src="./assets/cookie-crack.webm" muted playsinline webkit-playsinline loop></video>
+        </a-assets>
+
+        <!-- NFT marker path (no extension) -->
+        <!-- Note: position and scale are different for NFT vs Hiro markers. 
+             (0,0) is bottom-left, and units are roughly pixels of the source image. -->
+        <!-- Tuned smoothing for faster detection at a distance -->
+        <a-nft type="nft" url="./markers/fortune-cookie" smooth="true" smoothCount="10" smoothTolerance="0.01"
+            smoothThreshold="5">
+            
+            <!-- Increased width/height significantly (NFT units are large) -->
+            <!-- Positioned at 150, 150 to move it away from the bottom-left corner -->
+            <a-video src="#cookieVideo" width="300" height="210" position="150 0 -150" rotation="-90 0 0"></a-video>
+        </a-nft>
+
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+        const video = document.querySelector("#cookieVideo");
+        const loader = document.querySelector(".arjs-loader");
+        const nft = document.querySelector("a-nft");
+        let lostTimeout;
+
+        console.log("AR Script initialized");
+
+        // Hide loader when scene is ready
+        window.addEventListener("arjs-nft-loaded", () => {
+            console.log("NFT Data Fully Loaded");
+            loader.style.display = "none";
+        });
+
+        // Play video when marker is found
+        nft.addEventListener("markerFound", () => {
+            console.log("MARKER FOUND - Starting video");
+            clearTimeout(lostTimeout);
+            video.play().catch(e => console.error("Video play failed:", e));
+        });
+
+        // Pause video when marker is lost
+        nft.addEventListener("markerLost", () => {
+            console.log("MARKER LOST");
+            lostTimeout = setTimeout(() => {
+                video.pause();
+            }, 500);
+        });
+
+        // Manual override / Priming for mobile
+        window.addEventListener("click", () => {
+            console.log("User clicked - priming video");
+            video.play().then(() => {
+                console.log("Video primed successfully");
+            }).catch(e => console.warn("Video prime failed (expected on some devices):", e));
+        });
+    </script>
+</body>
+
+</html>
