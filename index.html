@@ -43,11 +43,11 @@
         arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720;">
         
         <a-assets timeout="30000">
-            <video id="cookieVideo" preload="auto" muted playsinline loop></video>
+            <video id="cookieVideo" preload="auto" muted playsinline loop crossorigin="anonymous"></video>
         </a-assets>
 
-        <!-- Increased smoothing values for a "stickier" tracking experience -->
-        <a-nft id="nft-marker" type="nft" url="" smooth="true" smoothCount="10" smoothTolerance="0.05" smoothThreshold="5">
+        <!-- Simplified path to see if the worker handles it better -->
+        <a-nft type="nft" url="./markers/fortune-cookie" smooth="true" smoothCount="10" smoothTolerance="0.05" smoothThreshold="5" crossorigin="anonymous">
             <a-video src="#cookieVideo" width="558" height="562" position="279 0 -281" rotation="-90 0 0"></a-video>
         </a-nft>
 
@@ -58,15 +58,13 @@
         const video = document.querySelector("#cookieVideo");
         const loader = document.querySelector("#loader");
         const loaderText = document.querySelector("#loader-text");
-        const nft = document.querySelector("#nft-marker");
+        const startBtn = document.querySelector("#startBtn");
+        const hint = document.querySelector("#hint");
+        const nft = document.querySelector("a-nft");
 
-        console.log("--- VERSION 5 LOADED ---");
+        console.log("--- VERSION 9 LOADED ---");
 
-        // Dynamic path resolution for markers (fixes GitHub Pages subfolder issue)
-        const pathPrefix = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-        const markerUrl = pathPrefix + "markers/fortune-cookie";
-        nft.setAttribute('url', markerUrl);
-        console.log("Loading markers from:", markerUrl);
+        // Setup Video Format (iPhone vs Others)
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const videoSrc = isIOS ? "./assets/cookie-crack.mp4" : "./assets/cookie-crack.webm";
         video.src = videoSrc;
@@ -74,6 +72,7 @@
         console.log("Loading video format:", videoSrc);
 
         window.addEventListener("arjs-nft-loaded", () => {
+            console.log("✅ EVENT: arjs-nft-loaded fired!");
             console.log("SUCCESS: NFT Marker Data loaded!");
             loaderText.innerText = "Ready!";
             startBtn.style.display = "block";
@@ -92,7 +91,6 @@
             startBtn.innerText = "STARTING CAMERA...";
             startBtn.disabled = true;
             
-            // Give the browser a moment to start the camera before hiding the loader
             video.play().then(() => {
                 video.pause();
                 console.log("Video primed and ready");
@@ -103,14 +101,14 @@
         });
 
         nft.addEventListener("markerFound", () => {
-            console.log("MARKER FOUND - Showing Animation");
+            console.log("🎯 MARKER FOUND");
             hint.innerText = "COOKIE DETECTED!";
             hint.style.background = "#ccffcc";
             video.play();
         });
 
         nft.addEventListener("markerLost", () => {
-            console.log("Marker Lost");
+            console.log("❓ Marker Lost");
             hint.innerText = "Scanning... 🔍";
             hint.style.background = "rgba(255, 255, 255, 0.9)";
             video.pause();
