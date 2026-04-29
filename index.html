@@ -2,81 +2,53 @@
 <html>
 
 <head>
-    <title>Fortune Cookie AR</title>
+    <title>Fortune Cookie AR (V2)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Use A-Frame 1.3.0 for better AR.js compatibility -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <!-- AR.js NFT version -->
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar-nft.js"></script>
 
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
-
+        body { margin: 0; overflow: hidden; }
         .hint {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            z-index: 10;
-            padding: 12px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.85);
-            font-family: sans-serif;
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 10; padding: 15px; border-radius: 12px;
+            background: rgba(255, 255, 255, 0.9); font-family: sans-serif;
             text-align: center;
+            border: 2px solid #ffcc00;
         }
-
-        /* Loading indicator for NFT */
         .arjs-loader {
-            height: 100%;
-            width: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            height: 100%; width: 100%; position: absolute; top: 0; left: 0;
+            background-color: #001a33; z-index: 9999; display: flex;
+            flex-direction: column; justify-content: center; align-items: center;
+            color: white; font-family: sans-serif;
         }
-
-        .arjs-loader div {
-            text-align: center;
-            font-size: 1.25em;
-            color: white;
-            font-family: sans-serif;
+        .start-btn {
+            padding: 15px 30px; font-size: 1.2em; background: #ffcc00;
+            border: none; border-radius: 30px; color: #333;
+            font-weight: bold; cursor: pointer; margin-top: 20px;
         }
     </style>
 </head>
 
 <body>
-    <!-- Loader shown until NFT markers are loaded -->
-    <div class="arjs-loader">
-        <div>Loading Fortune Cookie AR...<br>(This may take a few seconds)</div>
+    <div class="arjs-loader" id="loader">
+        <div id="loader-text">Initializing Fortune Cookie Engine...</div>
+        <button class="start-btn" id="startBtn" style="display: none;">CLICK TO START</button>
     </div>
 
-    <div class="hint">Point your camera at the fortune cookie drawing 🥠</div>
+    <div class="hint" id="hint">Scanning for drawing... 🥠</div>
 
-    <a-scene embedded vr-mode-ui="enabled: false" renderer="logarithmicDepthBuffer: true; precision: medium;"
+    <a-scene embedded vr-mode-ui="enabled: false" 
         arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720;">
         
-        <a-assets>
-            <video id="cookieVideo" src="./assets/cookie-crack.webm" muted playsinline webkit-playsinline loop></video>
+        <a-assets timeout="30000">
+            <video id="cookieVideo" src="./assets/cookie-crack.webm" preload="auto" muted playsinline loop></video>
         </a-assets>
 
-        <!-- NFT marker path (no extension) -->
-        <!-- Note: position and scale are different for NFT vs Hiro markers. 
-             (0,0) is bottom-left, and units are roughly pixels of the source image. -->
-        <!-- Tuned smoothing for faster detection at a distance -->
-        <a-nft type="nft" url="./markers/fortune-cookie" smooth="true" smoothCount="10" smoothTolerance="0.01"
-            smoothThreshold="5">
-            
-            <!-- Increased width/height significantly (NFT units are large) -->
-            <!-- Positioned at 150, 150 to move it away from the bottom-left corner -->
-            <a-video src="#cookieVideo" width="300" height="210" position="150 0 -150" rotation="-90 0 0"></a-video>
+        <!-- Increased smoothing values for a "stickier" tracking experience -->
+        <a-nft type="nft" url="markers/fortune-cookie" smooth="true" smoothCount="10" smoothTolerance="0.05" smoothThreshold="5">
+            <a-video src="#cookieVideo" width="558" height="562" position="279 0 -281" rotation="-90 0 0"></a-video>
         </a-nft>
 
         <a-entity camera></a-entity>
@@ -84,41 +56,56 @@
 
     <script>
         const video = document.querySelector("#cookieVideo");
-        const loader = document.querySelector(".arjs-loader");
+        const loader = document.querySelector("#loader");
+        const loaderText = document.querySelector("#loader-text");
+        const startBtn = document.querySelector("#startBtn");
+        const hint = document.querySelector("#hint");
         const nft = document.querySelector("a-nft");
-        let lostTimeout;
 
-        console.log("AR Script initialized");
+        console.log("--- VERSION 2 LOADED ---");
 
-        // Hide loader when scene is ready
         window.addEventListener("arjs-nft-loaded", () => {
-            console.log("NFT Data Fully Loaded");
-            loader.style.display = "none";
+            console.log("SUCCESS: NFT Marker Data loaded!");
+            loaderText.innerText = "Ready!";
+            startBtn.style.display = "block";
         });
 
-        // Play video when marker is found
-        nft.addEventListener("markerFound", () => {
-            console.log("MARKER FOUND - Starting video");
-            clearTimeout(lostTimeout);
-            video.play().catch(e => console.error("Video play failed:", e));
-        });
+        // If it takes more than 8 seconds, something is likely stuck
+        setTimeout(() => {
+            if (startBtn.style.display === "none") {
+                console.warn("NFT Loading Timeout - forcing start button");
+                loaderText.innerText = "Initialization complete (Timeout)";
+                startBtn.style.display = "block";
+            }
+        }, 8000);
 
-        // Pause video when marker is lost
-        nft.addEventListener("markerLost", () => {
-            console.log("MARKER LOST");
-            lostTimeout = setTimeout(() => {
-                video.pause();
-            }, 500);
-        });
-
-        // Manual override / Priming for mobile
-        window.addEventListener("click", () => {
-            console.log("User clicked - priming video");
+        startBtn.addEventListener("click", () => {
+            startBtn.innerText = "STARTING CAMERA...";
+            startBtn.disabled = true;
+            
+            // Give the browser a moment to start the camera before hiding the loader
             video.play().then(() => {
-                console.log("Video primed successfully");
-            }).catch(e => console.warn("Video prime failed (expected on some devices):", e));
+                video.pause();
+                console.log("Video primed and ready");
+                setTimeout(() => {
+                    loader.style.display = "none";
+                }, 500);
+            });
+        });
+
+        nft.addEventListener("markerFound", () => {
+            console.log("MARKER FOUND - Showing Animation");
+            hint.innerText = "COOKIE DETECTED!";
+            hint.style.background = "#ccffcc";
+            video.play();
+        });
+
+        nft.addEventListener("markerLost", () => {
+            console.log("Marker Lost");
+            hint.innerText = "Scanning... 🔍";
+            hint.style.background = "rgba(255, 255, 255, 0.9)";
+            video.pause();
         });
     </script>
 </body>
-
 </html>
