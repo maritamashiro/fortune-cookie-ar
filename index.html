@@ -43,7 +43,10 @@
         arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720;">
         
         <a-assets timeout="30000">
-            <video id="cookieVideo" src="./assets/cookie-crack.webm" preload="auto" muted playsinline loop></video>
+            <video id="cookieVideo" preload="auto" muted playsinline loop>
+                <source src="./assets/cookie-crack.webm" type="video/webm">
+                <source src="./assets/cookie-crack.mp4" type="video/mp4">
+            </video>
         </a-assets>
 
         <!-- Increased smoothing values for a "stickier" tracking experience -->
